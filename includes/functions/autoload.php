@@ -32,7 +32,7 @@ use RecursiveIteratorIterator;
  *
  * @return bool
  */
-function load( $exclude_filenames = [] ) {
+function load( $exclude_filenames = [], $exclude_directories = [] ) {
 	if ( ! defined( 'SURREALWEBS_PRIMARY_TAXONOMY_INC' ) ) {
 		return false;
 	}
@@ -46,7 +46,11 @@ function load( $exclude_filenames = [] ) {
 		}
 
 		// Check to see if the file should be excluded.
-		if ( \Surrealwebs\PrimaryTaxonomy\Functions\Autoload\is_excluded_file( $file, $exclude_filenames ) ) {
+		if ( is_excluded_file( $file, $exclude_filenames ) ) {
+			continue;
+		}
+
+		if ( is_in_excluded_directory( $file, $exclude_directories ) ) {
 			continue;
 		}
 
@@ -77,6 +81,10 @@ function load( $exclude_filenames = [] ) {
 function is_excluded_file( $file, $excluded_files ) {
 	$base_filename = basename( $file );
 
+	if ( empty( $excluded_files ) ) {
+		return false;
+	}
+
 	if ( ! isset( $excluded_files[ $base_filename ] ) ) {
 		return false;
 	}
@@ -86,4 +94,18 @@ function is_excluded_file( $file, $excluded_files ) {
 	}
 
 	return true;
+}
+
+function is_in_excluded_directory( $file, $excluded_directories ) {
+	if ( empty( $excluded_directories ) ) {
+		return false;
+	}
+
+	foreach ( $excluded_directories as $excluded_directory ) {
+		if ( false !== stristr( $file, $excluded_directory ) ) {
+			return true;
+		}
+	}
+
+	return false;
 }

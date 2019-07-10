@@ -16,7 +16,7 @@ use function add_filter;
  *
  * @package SurrealwebsPrimaryTaxonomy
  */
-class Menu {
+class MenuPage {
 	/** @var PageRenderer $page_renderer Object used to render admin pages. */
 	protected $page_renderer;
 

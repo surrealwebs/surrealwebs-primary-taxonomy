@@ -1,12 +1,14 @@
 <?php
 
-
 namespace Surrealwebs\PrimaryTaxonomy\Functions\Taxonomy;
 
 use function Surrealwebs\PrimaryTaxonomy\Functions\Plugin\get_object_name;
 
-function get_object_public_taxonomies( $object, $output = 'names', $force_reload = false ) {
-
+function get_object_public_taxonomies(
+	$object,
+	$output = 'names',
+	$force_reload = false
+) {
 	$object    = get_object_name( $object );
 	$cache_key = build_cache_key_for_post_type_public_taxonomies( $object, $output );
 
@@ -33,7 +35,11 @@ function get_object_public_taxonomies( $object, $output = 'names', $force_reload
 			continue;
 		}
 
-		$out_taxonomies[] = ( 'names' === $output ? $taxonomy->name : $taxonomy );
+		$out_taxonomies[] = (
+			'names' === $output
+			? $taxonomy->name
+			: $taxonomy
+		);
 	}
 
 	wp_cache_set(
@@ -49,7 +55,7 @@ function get_object_public_taxonomies( $object, $output = 'names', $force_reload
 function get_public_taxonomies_for_object_list( $objects, $output = 'names' ) {
 	$out = [];
 
-	foreach( $objects as $object ) {
+	foreach ( $objects as $object ) {
 		$taxes = get_object_public_taxonomies( $object, $output, true );
 		if ( empty( $taxes ) ) {
 			continue;
@@ -61,7 +67,6 @@ function get_public_taxonomies_for_object_list( $objects, $output = 'names' ) {
 }
 
 function maybe_purge_cache( $warm_cache = false ) {
-
 	// If nothing changed we have nothing to purge.
 	if ( ! known_post_types_changed() && ! known_taxonomies_changed() ) {
 		return false;
@@ -167,7 +172,10 @@ function warm_cache_for( $key, $data, $expire = 0 ) {
 	);
 }
 
-function build_cache_key_for_post_type_public_taxonomies( $post_type, $format = 'object' ) {
+function build_cache_key_for_post_type_public_taxonomies(
+	$post_type,
+	$format = 'object'
+) {
 	return sprintf(
 		'sw_public_taxonomies_%s_%s',
 		$post_type,
@@ -188,4 +196,144 @@ function get_known_post_types_cache_key() {
 
 function get_known_taxonomies_cache_key() {
 	return build_known_object_cache_key( 'taxonomies' );
+}
+
+function get_related_primary_taxonomy_term_id(
+	$term_id,
+	$taxonomy_name,
+	$create_missing = true
+) {
+	$primary_term_id = get_term_meta(
+		$term_id,
+		SURREALWEBS_PRIMARY_TAXONOMY_RELATED_TAXMETA_KEY,
+		true
+	);
+
+	if ( $create_missing && empty( $primary_term_id ) ) {
+		// add this term
+		$primary_term_id = copy_term_to_taxonomy(
+			$term_id,
+			$taxonomy_name,
+			SURREALWEBS_PRIMARY_TAXONOMY_POST_TAXONOMY_NAME,
+			true
+		);
+	}
+
+	return $primary_term_id;
+}
+
+function copy_term_to_taxonomy(
+	$original_term_id,
+	$original_taxonomy,
+	$new_taxonomy,
+	$relate_terms = false
+) {
+	$term            = get_term( $original_term_id, $original_taxonomy );
+	$term_data       = [
+		'description' => $term->description,
+		'slug'        => $term->slug,
+	];
+
+	// check to see if the "primary" taxonomy has this term
+	$primary_term_id       = 0;
+	$primary_existing_term = get_term_by( 'slug', $term->slug, $new_taxonomy );
+	if ( ! empty( $primary_existing_term ) ) {
+		$primary_term_id = $primary_existing_term->term_id;
+	}
+
+	if ( empty( $primary_term_id ) ) {
+		$primary_term_data = wp_insert_term(
+			$term->name,
+			$new_taxonomy,
+			$term_data
+		);
+
+		if (
+			is_wp_error( $primary_term_data )
+			|| ! isset( $primary_term_data['term_id'] )
+			|| empty( $primary_term_data['term_id'] )
+		) {
+			return 0;
+		}
+
+		$primary_term_id = $primary_term_data['term_id'];
+	}
+
+	if ( $relate_terms ) {
+		relate_term_with_primary_term(
+			$original_term_id,
+			$primary_term_id,
+			$original_taxonomy
+		);
+	}
+
+	return $primary_term_id;
+}
+
+function get_taxonomy_term_id_from_primary_term_id( $primary_term_id ) {
+	$term_id = get_term_meta(
+		$primary_term_id,
+		SURREALWEBS_PRIMARY_TAXONOMY_ORIGINAL_TAXMETA_KEY,
+		true
+	);
+
+	if ( ! empty( $term_id ) ) {
+		return absint( $term_id );
+	}
+
+	return 0;
+}
+
+function relate_term_with_primary_term(
+	$term_id,
+	$primary_term_id,
+	$taxonomy
+) {
+	// First, clean up the old relationships.
+	remove_term_meta_for_primary_term_relationships( $taxonomy );
+
+	// Related the term to the primary, this is setup as a two way relationship.
+	add_term_meta(
+		$term_id,
+		SURREALWEBS_PRIMARY_TAXONOMY_RELATED_TAXMETA_KEY,
+		$primary_term_id
+	);
+
+	add_term_meta(
+		$primary_term_id,
+		SURREALWEBS_PRIMARY_TAXONOMY_ORIGINAL_TAXMETA_KEY,
+		$term_id
+	);
+}
+
+function remove_term_meta_for_primary_term_relationships( $taxonomy ) {
+	$terms = get_terms(
+		[
+			'taxonomy' => $taxonomy,
+			'fields'   => 'ids',
+		]
+	);
+
+	if ( empty( $terms ) ) {
+		return;
+	}
+
+	foreach ( $terms as $term_id ) {
+		$primary_term_id = get_term_meta(
+			$term_id,
+			SURREALWEBS_PRIMARY_TAXONOMY_RELATED_TAXMETA_KEY
+		);
+
+		// Real term.
+		delete_term_meta(
+			$term_id,
+			SURREALWEBS_PRIMARY_TAXONOMY_RELATED_TAXMETA_KEY
+		);
+
+		// Primary term.
+		delete_term_meta(
+			$primary_term_id,
+			SURREALWEBS_PRIMARY_TAXONOMY_ORIGINAL_TAXMETA_KEY
+		);
+	}
 }

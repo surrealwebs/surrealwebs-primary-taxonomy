@@ -4,43 +4,20 @@
 namespace Surrealwebs\PrimaryTaxonomy\Hooks\Filter;
 
 
+use WP_Query;
+
 class TaxonomySearch {
 
-	protected $option_name;
+	protected $taxonomy_name;
 
-	protected $taxonomies;
-
-	public function __construct( $option_name ) {
-		$this->option_name = $option_name;
-
-		$this->load_taxonomies();
-	}
-
-	public function load_taxonomies() {
-		$this->taxonomies = [];
-
-		$option = get_option( $this->option_name, [] );
-
-		if ( empty( $option ) ) {
-			return false;
-		}
-
-		$all_taxonomies = [];
-		foreach ( maybe_unserialize( $option ) as $post => $taxonomies ) {
-			if ( empty( $taxonomies ) ) {
-				continue;
-			}
-
-			$all_taxonomies = array_merge( $all_taxonomies, array_keys( $taxonomies ) );
-		}
-
-		$this->taxonomies = $all_taxonomies ?: [];
+	public function __construct( $taxonomy_name ) {
+		$this->taxonomy_name = $taxonomy_name;
 	}
 
 	public function posts_join( $join, $query ) {
 		global $wpdb;
 
-		if ( ! $this->is_correct_query() ) {
+		if ( ! $this->is_correct_query( $query ) ) {
 			return $join;
 		}
 
@@ -61,19 +38,18 @@ class TaxonomySearch {
 	public function posts_where( $where, $query ) {
 		global $wpdb;
 
-		if ( ! $this->is_correct_query() || empty( $this->taxonomies ) ) {
+		if ( ! $this->is_correct_query( $query ) ) {
 			return $where;
 		}
 
-		$taxonomies = implode( ', ', $this->prep_taxonomies() );
-		if ( empty( $taxonomies ) ) {
+		if ( empty( $this->taxonomy_name ) ) {
 			return $where;
 		}
 
 		$where .= sprintf(
-			" OR ( `%s`.taxonomy IN ( %s ) AND `%s`.name LIKE '%%%s%%' ) ",
+			" OR ( `%s`.taxonomy = '%s' AND `%s`.name LIKE '%%%s%%' ) ",
 			$wpdb->term_taxonomy,
-			$taxonomies,
+			esc_sql( $this->taxonomy_name ),
 			$wpdb->terms,
 			esc_sql( $query->get( 's' ) )
 		);
@@ -84,36 +60,33 @@ class TaxonomySearch {
 	public function posts_groupby( $groupby, $query ) {
 		global $wpdb;
 
-		if ( ! $this->is_correct_query() || empty( $this->taxonomies ) ) {
+		if ( ! $this->is_correct_query( $query ) ) {
 			return $groupby;
 		}
 
 		return " `{$wpdb->posts}`.ID ";
 	}
 
-	protected function is_correct_query() {
-		if ( ! is_search () ) {
+	/**
+	 * Check to make sure we only modify the query when needed.
+	 *
+	 * @param WP_Query $query The current query being processed.
+	 *
+	 * @return bool True if we need to modify the query, otherwise false.
+	 */
+	protected function is_correct_query( $query ) {
+		if ( ! $query->is_search() ) {
 			return false;
 		}
 
-		if ( is_admin() ) {
+		if ( $query->is_admin ) {
 			return false;
 		}
 
-		if ( ! is_main_query() ) {
+		if ( ! $query->is_main_query() ) {
 			return false;
 		}
 
 		return true;
-	}
-
-	public function prep_taxonomies() {
-
-		return array_map(
-			function( $tax ) {
-				return sprintf( "'%s'", $tax );
-			},
-			$this->taxonomies
-		);
 	}
 }

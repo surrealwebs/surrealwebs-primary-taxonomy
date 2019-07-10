@@ -7,13 +7,15 @@
 
 namespace Surrealwebs\PrimaryTaxonomy\Functions\Plugin;
 
-use Surrealwebs\PrimaryTaxonomy\Admin\Menu;
+use Surrealwebs\PrimaryTaxonomy\Admin\MenuPage;
 use Surrealwebs\PrimaryTaxonomy\Admin\PageDetails;
 use Surrealwebs\PrimaryTaxonomy\Admin\PageRenderer;
 use Surrealwebs\PrimaryTaxonomy\Admin\ScreenOptions;
 use Surrealwebs\PrimaryTaxonomy\Admin\Settings;
 use function Surrealwebs\PrimaryTaxonomy\Functions\Taxonomy\get_public_taxonomies_for_object_list;
 use function Surrealwebs\PrimaryTaxonomy\Functions\Taxonomy\maybe_purge_cache;
+use Surrealwebs\PrimaryTaxonomy\Hooks\Action\AdminPostEdit;
+use Surrealwebs\PrimaryTaxonomy\Hooks\Action\PostSave;
 use Surrealwebs\PrimaryTaxonomy\Hooks\Filter\TaxonomySearch;
 use Surrealwebs\PrimaryTaxonomy\Taxonomies\Primary;
 use WP_Error;
@@ -46,8 +48,8 @@ function bootstrap() {
 	add_action( 'admin_menu', $n( 'admin_menu' ) );
 	add_action( 'admin_init', $n( 'admin_init' ) );
 
-	$tax_search = new TaxonomySearch( // [ 'swprimary' ]
-		SURREALWEBS_PRIMARY_TAXONOMY_ADMIN_SETTINGS
+	$tax_search = new TaxonomySearch(
+		SURREALWEBS_PRIMARY_TAXONOMY_POST_TAXONOMY_NAME
 	);
 	add_filter( 'posts_join', [ $tax_search, 'posts_join' ], 10, 2 );
 	add_filter( 'posts_where', [ $tax_search, 'posts_where' ], 10, 2 );
@@ -60,7 +62,8 @@ function bootstrap() {
  * @return void
  */
 function init() {
-
+	$admin_post_edit = new AdminPostEdit();
+	$admin_post_edit->register_hooks();
 }
 
 /**
@@ -90,9 +93,13 @@ function init_late() {
 	$primary_taxonomy = new Primary(
 		$primary_taxonomy_config,
 		$post_types,
-		'swprimary'
+		SURREALWEBS_PRIMARY_TAXONOMY_POST_TAXONOMY_NAME
 	);
 	$primary_taxonomy->register();
+
+
+	$post_save = new PostSave();
+	add_action( 'save_post', [ $post_save, 'set_primary_taxonomies' ], 10, 3 );
 
 	maybe_purge_cache( true );
 }
@@ -115,7 +122,13 @@ function admin_menu() {
 	$foot = [];
 
 	$page_details     = new PageDetails( $head, $body, $foot );
-	$page_renderer    = new PageRenderer( $page_details, get_option( SURREALWEBS_PRIMARY_TAXONOMY_ADMIN_SETTINGS, [] ) );
+	$page_renderer    = new PageRenderer(
+		$page_details,
+		get_option(
+			SURREALWEBS_PRIMARY_TAXONOMY_ADMIN_SETTINGS,
+			[]
+		)
+	);
 	$screen_options   = new ScreenOptions( [] );
 	$settings_handler = new Settings(
 		SURREALWEBS_PRIMARY_TAXONOMY_ADMIN_SETTINGS,
@@ -124,7 +137,7 @@ function admin_menu() {
 
 	$settings_handler->set_fields( get_admin_settings_page_fields() );
 
-	$admin_menu_instance = new Menu(
+	$admin_menu_instance = new MenuPage(
 		SURREALWEBS_PRIMARY_TAXONOMY_ADMIN_SETTINGS,
 		$page_renderer,
 		$screen_options,
@@ -162,11 +175,17 @@ function enqueue_styles() {
 }
 
 function object_factory( $object_name, $namespace = '', ...$args ) {
-	$ns_object_name = ! empty( $namespace ) ? $namespace . '/' . $object_name : $object_name;
+	$ns_object_name = ! empty( $namespace )
+		? $namespace . '/' . $object_name
+		: $object_name;
 
 	if ( ! class_exists( $ns_object_name ) ) {
-		return new WP_Error( 'CLASS_NOT_FOUND', "Class {$ns_object_name} is not valid" );
+		return new WP_Error(
+			'CLASS_NOT_FOUND',
+			"Class {$ns_object_name} is not valid"
+		);
 	}
+
 	return new $ns_object_name( ...$args );
 }
 
@@ -186,14 +205,21 @@ function get_admin_settings_page_fields() {
 	$out = [
 		'sections' => [
 			[
-				'id'          => 'primary_taxonomies',
-				'title'       => __( 'Primary Taxonomies', 'surrealwebs-primary-taxonomy' ),
+				'id'    => 'primary_taxonomies',
+				'title' => __(
+					'Primary Taxonomies',
+					'surrealwebs-primary-taxonomy'
+				),
 			],
 		],
 		'fields'   => [],
 	];
 
-	$public_taxonomies = get_public_taxonomies_for_object_list( get_post_types(), 'object' );
+	$public_taxonomies = get_public_taxonomies_for_object_list(
+		get_post_types(),
+		'object'
+	);
+
 	foreach ( $public_taxonomies as $post_type => $taxonomies ) {
 		$options = [];
 		/** @var WP_Taxonomy $taxonomy */

@@ -7,7 +7,14 @@
 
 namespace Surrealwebs\PrimaryTaxonomy\Admin;
 
+use function add_settings_field;
+use function add_settings_section;
+use function esc_html_e;
+use function get_option;
+use function register_setting;
+use function sanitize_text_field;
 use function Surrealwebs\PrimaryTaxonomy\Functions\Taxonomy\get_object_public_taxonomies;
+use function update_option;
 use WP_Error;
 
 /**
@@ -62,6 +69,11 @@ class Settings {
 		$this->settings   = get_option( $option_name, $default_settings );
 	}
 
+	/**
+	 * Registers the settings fields for the admin page.
+	 *
+	 * @return bool|WP_Error True on success or WP_Error if there was problem.
+	 */
 	public function register_settings_page_fields() {
 		if ( empty( $this->fields ) ) {
 			return new WP_Error(
@@ -83,12 +95,19 @@ class Settings {
 		}
 
 		if ( isset( $this->fields['fields'] ) ) {
-			array_map( [ $this, 'register_field'], $this->fields['fields'] );
+			array_map( [ $this, 'register_field' ], $this->fields['fields'] );
 		}
 
 		return true;
 	}
 
+	/**
+	 * Register the specified settings section.
+	 *
+	 * @param array $section Configuration used to create the section.
+	 *
+	 * @return void
+	 */
 	public function register_section( $section ) {
 		$callback = $this->get_settings_section_description_callback( $section['id'] );
 
@@ -100,13 +119,20 @@ class Settings {
 		);
 	}
 
+	/**
+	 * Register a settings field so it appears on the settings page.
+	 *
+	 * @param array $field Desired field configuration.
+	 *
+	 * @return void
+	 */
 	public function register_field( $field ) {
 		add_settings_field(
 			$field['key'],
 			$field['title'],
 			[
 				$this->page_renderer,
-				$this->page_renderer->get_callback_name_from_type( $field['type'] )
+				$this->page_renderer->get_callback_name_from_type( $field['type'] ),
 			],
 			SURREALWEBS_PRIMARY_TAXONOMY_ADMIN_SETTINGS . '_options',
 			$field['section'],
@@ -114,6 +140,13 @@ class Settings {
 		);
 	}
 
+	/**
+	 * Get the name of the callback method used to render a section description.
+	 *
+	 * @param string $section_id The ID/slug of the section.
+	 *
+	 * @return string The callback method name.
+	 */
 	public function get_settings_section_description_callback( $section_id ) {
 		$section_callbacks = [
 			'primary_taxonomies' => 'get_translated_primary_taxonomies_description',
@@ -127,6 +160,11 @@ class Settings {
 		return $section_callbacks['default'];
 	}
 
+	/**
+	 * Display the translated Primary Taxonomies section description.
+	 *
+	 * @return void
+	 */
 	public function get_translated_primary_taxonomies_description() {
 		esc_html_e(
 			'Primary Taxonomy configurations by post type.',
@@ -134,44 +172,82 @@ class Settings {
 		);
 	}
 
+	/**
+	 * Callback method used when a section has no description, does nothing.
+	 *
+	 * @return bool False in all instances.
+	 */
 	public function get_empty_description() {
 		return false;
 	}
 
+	/**
+	 * The the option name
+	 *
+	 * @param string $option_name The option name.
+	 *
+	 * @return void
+	 */
 	public function set_option_name( $option_name ) {
 		$this->option_name = $option_name;
 	}
 
+	/**
+	 * Get the option name.
+	 *
+	 * @return string The option name.
+	 */
 	public function get_option_name() {
 		return $this->option_name;
 	}
 
+	/**
+	 * The the object used to render the settings page.
+	 *
+	 * @param PageRenderer $page_renderer The renderer for the settings page.
+	 *
+	 * @return void
+	 */
 	public function set_page_renderer( $page_renderer ) {
 		$this->page_renderer = $page_renderer;
 	}
 
+	/**
+	 * Get the settings page renderer.
+	 *
+	 * @return PageRenderer The renderer for the settings page.
+	 */
 	public function get_page_renderer() {
 		return $this->page_renderer;
 	}
 
-	public function get_fields() {
-		return $this->fields;
-	}
-
+	/**
+	 * Set the settings page fields.
+	 *
+	 * @param array $fields List of settings page fields.
+	 */
 	public function set_fields( $fields ) {
 		$this->fields = $fields;
 	}
 
+	/**
+	 * Get the configured fields for the settings page.
+	 *
+	 * @return array List of fields.
+	 */
+	public function get_fields() {
+		return $this->fields;
+	}
 
 	/**
-	 * Sanitization callback for settings/option page
+	 * Sanitization callback for settings/option page.
 	 *
-	 * @param $input - submitted settings values
+	 * @param array $input Submitted settings values.
 	 *
-	 * @return array
+	 * @return array Sanitized setting values.
 	 */
 	public function sanitize_settings( $input ) {
-		$options = array();
+		$options = [];
 
 		// loop through settings fields to control what we're saving
 		foreach ( $this->fields['fields'] as $key => $field ) {
@@ -190,6 +266,15 @@ class Settings {
 		return $options;
 	}
 
+	/**
+	 * Sanitize taxonomies, validates against known taxonomies for post type.
+	 *
+	 * @param string $post_type     The post type of taxonomy being processed.
+	 * @param array  $taxonomy_list List of taxonomies to process.
+	 * @param bool   $single        Used to indicate only a single taxonomy is expected.
+	 *
+	 * @return array List of validated and sanitized taxonomies.
+	 */
 	public function sanitize_taxonomies( $post_type, $taxonomy_list, $single = false ) {
 		$real_taxonomies = get_object_public_taxonomies( $post_type, 'names' );
 		$sanitized       = [];
@@ -206,7 +291,7 @@ class Settings {
 			}
 
 			if ( isset( $taxonomy_list[ $taxonomy ] ) ) {
-				$clean_taxonomy = sanitize_text_field( $taxonomy );
+				$clean_taxonomy               = sanitize_text_field( $taxonomy );
 				$sanitized[ $clean_taxonomy ] = $clean_taxonomy;
 			}
 		}
@@ -214,29 +299,77 @@ class Settings {
 		return $sanitized;
 	}
 
-	public function __get( $key ){
+	/**
+	 * Magic getter to retrieve values.
+	 *
+	 * @param string $key The name of the value to retrieve.
+	 *
+	 * @return mixed The item's value if found.
+	 */
+	public function __get( $key ) {
 		if ( isset( $this->settings[ $key ] ) ) {
 			return $this->settings[ $key ];
 		}
 	}
 
-	public function __set( $key, $value ){
+	/**
+	 * Magic setter to store value.
+	 *
+	 * @param string $key   Name of the value to store.
+	 * @param mixed  $value The value being stored.
+	 *
+	 * @return void
+	 */
+	public function __set( $key, $value ) {
 		$this->settings[ $key ] = $value;
 	}
 
-	public function __isset( $key ){
+	/**
+	 * Magic method used to test if a value has been set.
+	 *
+	 * @param string $key The value being tested.
+	 *
+	 * @return bool True if set otherwise false.
+	 */
+	public function __isset( $key ) {
 		return isset( $this->settings[ $key ] );
 	}
 
-	public function __unset( $key ){
-		unset( $this->settings[ $key ]);
+	/**
+	 * Magic method used to unset a value.
+	 *
+	 * @param string $key The name of the value to unset.
+	 *
+	 * @return void
+	 */
+	public function __unset( $key ) {
+		unset( $this->settings[ $key ] );
 	}
 
-	public function get_settings(){
+	/**
+	 * Get the settings stored in the object.
+	 *
+	 * @return array The stored settings.
+	 */
+	public function get_settings() {
 		return $this->settings;
 	}
 
-	public function save(){
+	/**
+	 * Get the default settings stored in the object.
+	 *
+	 * @return array The stored default settings.
+	 */
+	public function get_default_settings() {
+		return $this->default_settings;
+	}
+
+	/**
+	 * Saves the settings to the options table.
+	 *
+	 * @return void
+	 */
+	public function save() {
 		update_option( $this->option_name, $this->settings );
 	}
 }

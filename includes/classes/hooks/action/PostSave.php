@@ -1,14 +1,26 @@
 <?php
-
+/**
+ * Post Save hook callbacks.
+ *
+ * @package SurrealwebsPrimaryTaxonomy
+ */
 
 namespace Surrealwebs\PrimaryTaxonomy\Hooks\Action;
 
-
+use function add_action;
+use function remove_action;
 use function Surrealwebs\PrimaryTaxonomy\Functions\Taxonomy\get_related_primary_taxonomy_term_id;
 use function Surrealwebs\PrimaryTaxonomy\Functions\Utilities\build_nonce_name_for_taxonomy;
 use function Surrealwebs\PrimaryTaxonomy\Functions\Utilities\build_primary_term_field_name_for_taxonomy;
+use function wp_get_post_terms;
+use function wp_is_post_revision;
 use WP_Post;
 
+/**
+ * Class PostSave callback operators.
+ *
+ * @package SurrealwebsPrimaryTaxonomy
+ */
 class PostSave {
 	/**
 	 * Set the primary category for the post if any are selected.
@@ -19,6 +31,7 @@ class PostSave {
 	 * @param WP_Post $post    The saved post.
 	 * @param bool    $update  True if updated existing post, otherwise false.
 	 *
+	 * @return void
 	 */
 	public function set_primary_taxonomies( $post_id, $post, $update ) {
 		if ( wp_is_post_revision( $post_id ) ) {
@@ -51,6 +64,15 @@ class PostSave {
 		add_action( 'save_post', [ $this, 'set_primary_taxonomies' ], 10, 3 );
 	}
 
+	/**
+	 * Saves the primary terms for the post.
+	 *
+	 * @param int   $post_id        The ID of the post we are working with
+	 * @param array $taxonomy_names The taxonomy names to use when processing.
+	 * @param array $current_terms  The post's current taxonomy terms.
+	 *
+	 * @return void
+	 */
 	public function save_primary_terms( $post_id, $taxonomy_names, $current_terms ) {
 
 		$primary_terms = [];
@@ -74,8 +96,6 @@ class PostSave {
 			SURREALWEBS_PRIMARY_TAXONOMY_POST_TAXONOMY_NAME,
 			false
 		);
-
-		return true;
 	}
 
 	/**

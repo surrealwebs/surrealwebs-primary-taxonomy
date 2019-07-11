@@ -37,6 +37,23 @@ class SettingsTest extends TestCase {
 	}
 
 	public function test_load() {
+		$expected = 'test this is set';
 
+		\WP_Mock::userFunction(
+			'get_option' ,
+			[
+				'args' => [ $this->test_option_name, [] ],
+				'return' => $expected,
+			]
+		);
+
+		$sut = new Settings(
+			$this->test_option_name,
+			$this->default_settings
+		);
+
+		$sut->load( $this->test_option_name, $this->default_settings );
+
+		$this->assertEquals( $expected, $sut->get_settings() );
 	}
 }

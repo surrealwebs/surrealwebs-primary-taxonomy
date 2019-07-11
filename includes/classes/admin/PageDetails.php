@@ -1,17 +1,34 @@
 <?php
-
+/**
+ * Page details class.
+ *
+ * @package surrealwebs-primary-taxonomy
+ */
 
 namespace Surrealwebs\PrimaryTaxonomy\Admin;
 
-
+/**
+ * Class PageDetails is used to hold page components.
+ *
+ * @package surrealwebs-primary-taxonomy
+ */
 class PageDetails {
-
+	/** @var array $head List of header content. */
 	protected $head;
 
+	/** @var array $foot List of footer content. */
 	protected $foot;
 
+	/** @var array $body List of body content. */
 	protected $body;
 
+	/**
+	 * PageDetails constructor.
+	 *
+	 * @param array $head Header content.
+	 * @param array $body Body content.
+	 * @param array $foot Footer content.
+	 */
 	public function __construct( $head, $body, $foot ) {
 		$this->head = $head;
 		$this->body = $body;
@@ -19,46 +36,62 @@ class PageDetails {
 	}
 
 	/**
-	 * @return mixed
+	 * Get the header content.
+	 *
+	 * @return array Header content.
 	 */
 	public function get_head() {
 		return $this->head;
 	}
 
 	/**
-	 * @param mixed $head
+	 * Set the header content.
+	 *
+	 * @param array $head List of header content.
+	 *
+	 * @return void
 	 */
 	public function set_head( $head ) {
 		$this->head = $head;
 	}
 
 	/**
-	 * @return mixed
+	 * Get footer content.
+	 *
+	 * @return array List of footer content.
 	 */
 	public function get_foot() {
 		return $this->foot;
 	}
 
 	/**
-	 * @param mixed $foot
+	 * Set the footer content.
+	 *
+	 * @param array $foot List of footer content.
+	 *
+	 * @return void
 	 */
 	public function set_foot( $foot ) {
 		$this->foot = $foot;
 	}
 
 	/**
-	 * @return mixed
+	 * Get the body content.
+	 *
+	 * @return array List of body content.
 	 */
 	public function get_body() {
 		return $this->body;
 	}
 
 	/**
-	 * @param mixed $body
+	 * Set the body content
+	 *
+	 * @param array $body List of body content.
+	 *
+	 * @return void
 	 */
 	public function set_body( $body ) {
 		$this->body = $body;
 	}
-
-
 }

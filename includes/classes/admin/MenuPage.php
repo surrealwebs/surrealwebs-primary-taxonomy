@@ -32,10 +32,14 @@ class MenuPage {
 	/**
 	 * Menu constructor.
 	 *
-	 * @param string        $option_group_name     Name to use for the settings.
-	 * @param PageRenderer  $page_renderer         Object instance used to render pages.
-	 * @param ScreenOptions $screen_option_handler Object use to handle screen options.
-	 * @param Settings      $settings_handler      Manages settings for admin pages.
+	 * @param string        $option_group_name     Name to use for the
+	 *                                             settings.
+	 * @param PageRenderer  $page_renderer         Object instance used to
+	 *                                             render pages.
+	 * @param ScreenOptions $screen_option_handler Object use to handle screen
+	 *                                             options.
+	 * @param Settings      $settings_handler      Manages settings for admin
+	 *                                             pages.
 	 */
 	public function __construct(
 		$option_group_name,
@@ -52,12 +56,12 @@ class MenuPage {
 	/**
 	 * This method will add menu items to the WP Admin Settings menu.
 	 *
-	 * @uses add_options_page
+	 * @return void
+	 * @uses   add_options_page
 	 *
 	 * @action load-{hook_suffix} The hook_suffix comes from add_options_page.
 	 * @filter set-screen-option
 	 *
-	 * @return void
 	 */
 	public function add_menu_items() {
 
@@ -94,7 +98,7 @@ class MenuPage {
 			'admin_init',
 			[
 				$this->settings_handler,
-				'register_settings_page_fields'
+				'register_settings_page_fields',
 			]
 		);
 	}
@@ -117,13 +121,22 @@ class MenuPage {
 		$this_page = isset( $_REQUEST['page'] ) ? $_REQUEST['page'] : '';
 		switch ( $this_page ) {
 			case $this->option_group_name . '_options':
-				return $this->screen_option_handler->save_screen_option( $status, $option, $value );
+				return $this->screen_option_handler->save_screen_option(
+					$status,
+					$option,
+					$value
+				);
 				break;
 		}
 
 		return $status;
 	}
 
+	/**
+	 * Renders the settings page.
+	 *
+	 * @return void
+	 */
 	public function do_settings_page() {
 		$this->settings_handler->load( $this->option_group_name, [] );
 		$this->page_renderer->main_settings_page( $this->settings_handler );

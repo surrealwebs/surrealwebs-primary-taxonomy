@@ -1,19 +1,46 @@
 <?php
-
+/**
+ * Filter callback operator for adding taxonomy to searches.
+ *
+ * @package SurrealwebsPrimaryTaxonomy
+ */
 
 namespace Surrealwebs\PrimaryTaxonomy\Hooks\Filter;
 
-
+use function esc_sql;
 use WP_Query;
 
+/**
+ * Class TaxonomySearch filters used to modify the search query.
+ *
+ * @package SurrealwebsPrimaryTaxonomy
+ */
 class TaxonomySearch {
 
+	/**
+	 * @var string $taxonomy_name The name of the taxonomy to search.
+	 */
 	protected $taxonomy_name;
 
+	/**
+	 * TaxonomySearch constructor.
+	 *
+	 * @param string $taxonomy_name Name of the taxonomy to search.
+	 */
 	public function __construct( $taxonomy_name ) {
 		$this->taxonomy_name = $taxonomy_name;
 	}
 
+	/**
+	 * Filters the "join" portion of the query to add taxonomy support.
+	 *
+	 * @filter posts_join
+	 *
+	 * @param string $join The current "join" string.
+	 * @param WP_Query $query The current query being processed.
+	 *
+	 * @return string The updated join.
+	 */
 	public function posts_join( $join, $query ) {
 		global $wpdb;
 
@@ -35,6 +62,16 @@ class TaxonomySearch {
 		return $join;
 	}
 
+	/**
+	 * Filters the "where" portion of the query to add taxonomy support.
+	 *
+	 * @filter posts_where
+	 *
+	 * @param string $where The current "where" string.
+	 * @param WP_Query $query The current query being processed.
+	 *
+	 * @return string The updated where.
+	 */
 	public function posts_where( $where, $query ) {
 		global $wpdb;
 
@@ -57,6 +94,16 @@ class TaxonomySearch {
 		return $where;
 	}
 
+	/**
+	 * Filters the "group by" portion of the query to add taxonomy support.
+	 *
+	 * @filter posts_groupby
+	 *
+	 * @param string $groupby The current "groupby" string.
+	 * @param WP_Query $query The current query being processed.
+	 *
+	 * @return string The updated grouping.
+	 */
 	public function posts_groupby( $groupby, $query ) {
 		global $wpdb;
 

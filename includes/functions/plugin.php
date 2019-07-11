@@ -37,7 +37,7 @@ function deactivate() {
 /**
  * Bootstrap the plugin, setup all initial hooks.
  *
- * @see https://github.com/10up/plugin-scaffold/
+ * @see    https://github.com/10up/plugin-scaffold/
  *
  * @action init
  * @action admin_init
@@ -52,7 +52,7 @@ function deactivate() {
 function bootstrap() {
 	// Lifted from the 10up plugin scaffold.
 	// This makes calling namespaced functions easier.
-	$n = function( $function ) {
+	$n = function ( $function ) {
 		return __NAMESPACE__ . "\\$function";
 	};
 
@@ -190,7 +190,7 @@ function enqueue_styles() {
 /**
  * Gets a name for the specified object.
  *
- * @param mixed $object That which shall be named.
+ * @param mixed  $object        That which shall be named.
  * @param string $property_name Property to used if $object is an object.
  *
  * @return string The name of the object.
@@ -241,14 +241,14 @@ function get_admin_settings_page_fields() {
 			];
 		}
 
-		$post_type = get_post_type_object( $post_type );
+		$post_type                         = get_post_type_object( $post_type );
 		$out['fields'][ $post_type->name ] = [
 			'key'         => $post_type->name,
 			'name'        => [
 				'template' => '%s[%s]',
 				'base'     => SURREALWEBS_PRIMARY_TAXONOMY_ADMIN_SETTINGS,
 				'extra'    => [
-					$post_type->name
+					$post_type->name,
 				],
 			],
 			'title'       => $post_type->labels->singular_name,

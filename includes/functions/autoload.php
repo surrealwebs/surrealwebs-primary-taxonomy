@@ -96,6 +96,14 @@ function is_excluded_file( $file, $excluded_files ) {
 	return true;
 }
 
+/**
+ * Checks to see if the specified "file" is in the list of excluded directories.
+ *
+ * @param string $file                 File name/path
+ * @param array  $excluded_directories List of directories to skip
+ *
+ * @return bool True if in the list to exclude, otherwise true.
+ */
 function is_in_excluded_directory( $file, $excluded_directories ) {
 	if ( empty( $excluded_directories ) ) {
 		return false;

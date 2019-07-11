@@ -7,6 +7,11 @@
 
 namespace Surrealwebs\PrimaryTaxonomy\Functions\Plugin;
 
+use function add_action;
+use function add_filter;
+use function get_option;
+use function get_post_type_object;
+use function get_post_types;
 use Surrealwebs\PrimaryTaxonomy\Admin\MenuPage;
 use Surrealwebs\PrimaryTaxonomy\Admin\PageDetails;
 use Surrealwebs\PrimaryTaxonomy\Admin\PageRenderer;
@@ -33,6 +38,14 @@ function deactivate() {
  * Bootstrap the plugin, setup all initial hooks.
  *
  * @see https://github.com/10up/plugin-scaffold/
+ *
+ * @action init
+ * @action admin_init
+ * @action admin_menu
+ *
+ * @filter posts_join
+ * @filter posts_where
+ * @filter posts_groupby
  *
  * @return void
  */
@@ -174,21 +187,14 @@ function enqueue_styles() {
 
 }
 
-function object_factory( $object_name, $namespace = '', ...$args ) {
-	$ns_object_name = ! empty( $namespace )
-		? $namespace . '/' . $object_name
-		: $object_name;
-
-	if ( ! class_exists( $ns_object_name ) ) {
-		return new WP_Error(
-			'CLASS_NOT_FOUND',
-			"Class {$ns_object_name} is not valid"
-		);
-	}
-
-	return new $ns_object_name( ...$args );
-}
-
+/**
+ * Gets a name for the specified object.
+ *
+ * @param mixed $object That which shall be named.
+ * @param string $property_name Property to used if $object is an object.
+ *
+ * @return string The name of the object.
+ */
 function get_object_name( $object, $property_name = 'post_type' ) {
 	if ( is_string( $object ) ) {
 		return $object;
@@ -198,9 +204,14 @@ function get_object_name( $object, $property_name = 'post_type' ) {
 		return $object->{$property_name};
 	}
 
-	return md5( $object );
+	return md5( serialize( $object ) );
 }
 
+/**
+ * Get the field configurations for use on the admin settings page.
+ *
+ * @return array Field configurations.
+ */
 function get_admin_settings_page_fields() {
 	$out = [
 		'sections' => [
@@ -251,6 +262,14 @@ function get_admin_settings_page_fields() {
 	return $out;
 }
 
+/**
+ * Build a list of default configurations for a custom taxonomy.
+ *
+ * @param string $single Taxonomy singular name.
+ * @param string $plural Taxonomy plural name.
+ *
+ * @return array The configured arguments.
+ */
 function build_default_taxonomy_args_array( $single, $plural ) {
 	return [
 		'labels'            => [

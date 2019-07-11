@@ -1,16 +1,40 @@
 <?php
-
+/**
+ * Admin post edit hook callbacks.
+ *
+ * @package SurrealwebsPrimaryTaxonomy
+ */
 
 namespace Surrealwebs\PrimaryTaxonomy\Hooks\Action;
 
+use function add_action;
+use function get_post_type;
+use function get_terms;
 use Surrealwebs\PrimaryTaxonomy\Admin\Settings;
-use function Surrealwebs\PrimaryTaxonomy\Functions\Taxonomy\get_object_public_taxonomies;
 use function Surrealwebs\PrimaryTaxonomy\Functions\Taxonomy\get_related_primary_taxonomy_term_id;
 use function Surrealwebs\PrimaryTaxonomy\Functions\Taxonomy\get_taxonomy_term_id_from_primary_term_id;
+use function wp_enqueue_script;
+use function wp_get_post_terms;
+use function wp_localize_script;
+use function wp_register_script;
 use WP_Taxonomy;
 use WP_Term;
 
+/**
+ * Class AdminPostEdit collection of callbacks for post edit hooks.
+ *
+ * @package SurrealwebsPrimaryTaxonomy
+ */
 class AdminPostEdit {
+
+	/**
+	 * Register the various hooks to interact with.
+	 *
+	 * @action admin_enqueue_scripts
+	 * @action admin_footer
+	 *
+	 * @return void
+	 */
 	public function register_hooks() {
 		add_action(
 			'admin_enqueue_scripts',
@@ -22,6 +46,13 @@ class AdminPostEdit {
 		add_action( 'admin_footer', [ $this, 'include_js_templates' ] );
 	}
 
+	/**
+	 * Callback used to enqueue the admin script files.
+	 *
+	 * @param string $hook_suffix The hook name used to identify the page.
+	 *
+	 * @return void
+	 */
 	public function enqueue_scripts( $hook_suffix ) {
 		if ( ! $this->is_post_edit( $hook_suffix ) ) {
 			return;
@@ -88,7 +119,7 @@ class AdminPostEdit {
 	 *
 	 * @param int $post_id The post used to find taxonomies.
 	 *
-	 * @return array
+	 * @return array The taxonomies for the post.
 	 */
 	public function get_post_taxonomies( $post_id = 0 ) {
 		if ( empty( $post_id ) ) {
@@ -104,7 +135,7 @@ class AdminPostEdit {
 			SURREALWEBS_PRIMARY_TAXONOMY_ADMIN_SETTINGS,
 			[]
 		);
-		$taxonomy_slugs   = $settings_handler->{ $post_type };
+		$taxonomy_slugs   = $settings_handler->{$post_type};
 		if ( empty( $taxonomy_slugs ) ) {
 			return [];
 		}
@@ -193,6 +224,11 @@ class AdminPostEdit {
 		];
 	}
 
+	/**
+	 * Get the ID of the post currently being updated.
+	 *
+	 * @return int The id of the current post.
+	 */
 	public function current_post_id() {
 		return (int) filter_input(
 			INPUT_GET,

@@ -2,7 +2,7 @@
 /**
  * Page Renderer class
  *
- * @package surrealwebs-primary-taxonomy.
+ * @package SurrealwebsPrimaryTaxonomy
  */
 
 namespace Surrealwebs\PrimaryTaxonomy\Admin;
@@ -10,7 +10,7 @@ namespace Surrealwebs\PrimaryTaxonomy\Admin;
 /**
  * Class PageRenderer used to render settings pages.
  *
- * @package surrealwebs-primary-taxonomy.
+ * @package SurrealwebsPrimaryTaxonomy
  */
 class PageRenderer {
 	/** @var array $setting_values List of current setting values. */

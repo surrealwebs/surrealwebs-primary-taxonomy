@@ -2,7 +2,7 @@
 /**
  * Page details class.
  *
- * @package surrealwebs-primary-taxonomy
+ * @package SurrealwebsPrimaryTaxonomy
  */
 
 namespace Surrealwebs\PrimaryTaxonomy\Admin;
@@ -10,7 +10,7 @@ namespace Surrealwebs\PrimaryTaxonomy\Admin;
 /**
  * Class PageDetails is used to hold page components.
  *
- * @package surrealwebs-primary-taxonomy
+ * @package SurrealwebsPrimaryTaxonomy
  */
 class PageDetails {
 	/** @var array $head List of header content. */
